@@ -9,7 +9,7 @@
 
 static char memory[MEMORY_SIZE];
 
-void *get_memory_adr() {
+void * get_memory_adr() {
 	return memory;
 }
 

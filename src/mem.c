@@ -9,23 +9,13 @@
 //-------------------------------------------------------------
 void mem_init() {
 
-  void* memory = get_memory_adr();
+    void* memory = get_memory_adr();
 
-  //déclaration & initialisation du 1er block libre
-  fb_t f_fb ;
-  f_fb.size = get_memory_size() - sizeof(memory_head_t) - sizeof(fb_t) ;
-  f_fb.next = NULL ;
-
-  //déclaration & initialisation de l'entête de notre mémoire
-  memory_head_t mem_h ;
-
-  mem_h.first_block = sizeof(memory_head_t) + (void*)memory ;
-
-  mem_h.strategy = &mem_first_fit ;
-
-  ((void *) memory) = mem_h ;
-
-  ((void *)memory + sizeof(memory_head_t)) = f_fb ;
+    //déclaration & initialisation de l'entête de notre mémoire
+    memory_head_t* mem_h= (memory_head_t*)memory ;
+    mem_h->strategy = &mem_first_fit ;
+    mem_h->first_block.size = get_memory_size() - sizeof(memory_head_t);
+    mem_h->first_block.next = NULL;
 
 }
 

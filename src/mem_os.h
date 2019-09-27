@@ -11,8 +11,8 @@ struct fb {
 } typedef fb_t ;
 
 struct memory_head {
-	fb_t *first_block ;
 	mem_fit_function_t *strategy ;
+	fb_t first_block ;
 }typedef memory_head_t ;
 
 /* -----------------------------------------------*/
