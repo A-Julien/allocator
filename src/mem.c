@@ -3,6 +3,8 @@
 #include "mem_os.h"
 #include "common.h"
 #include <stdio.h>
+#include <jmorecfg.h>
+#include <stdbool.h>
 
 //-------------------------------------------------------------
 // mem_init
@@ -31,9 +33,10 @@ void* mem_alloc(size_t size) {
     void* memory = get_memory_adr();
     memory_head_t* mem_h = (memory_head_t*)memory ;
 
+    if (!mem_h->first_block) return NULL;
+
     fb_t* fb_found = mem_h->strategy(mem_h->first_block, ((size + sizeof(fb_t)) - sizeof(rb_t)));
     if(!fb_found) return NULL;
-
 
     fb_t* fb_previous = fb_found->previous;
     fb_t* fb_next = fb_found->next;
@@ -69,11 +72,79 @@ void* mem_alloc(size_t size) {
     return fb_found + sizeof(rb_t);;
 }
 
+bool adjoining_block_fb(fb_t * block_1, fb_t * block_2){
+    return block_1 + sizeof(fb_t) + block_1->size == block_2;
+}
+
+bool adjoining_block_rb(rb_t * block_1, rb_t * block_2){
+    return block_1 + sizeof(rb_t) + block_1->size == block_2;
+}
+
+void maj_rb(fb_t * fb, rb_t* rb){
+    size_t size_ofset = 0;
+    rb_t* rb_adjoining = NULL;
+    while ((void *)fb->next != (void *)rb_adjoining ){
+        rb_adjoining = rb + (rb->size + size_ofset);
+        rb_adjoining->previous_fb = fb;
+        size_ofset += rb_adjoining->size + sizeof(rb_t);
+    }
+}
+//FUSIOOOOONNNNNNNNN (DBZ)
+void right_fusion(fb_t* fb, rb_t* rb){
+    if (rb->previous_fb->next && adjoining_block_fb(fb, fb->next)){
+        fb->next = fb->next->next;
+        fb->previous->next = fb;
+
+        fb->size = sizeof(fb_t)*2 + fb->next->size;
+    } else {
+        maj_rb(fb, rb);
+    }
+}
+//FUSIOOOOONNNNNNNNN (DBZ)
+void left_fusion(fb_t* fb){
+    if (adjoining_block_fb(fb->previous, fb)){
+        fb->previous->next = fb->next;
+        fb->next->previous = fb->previous;
+
+        fb->previous->size += sizeof(fb_t) +  fb->size;
+    }
+}
+
+
 //-------------------------------------------------------------
 // mem_free
 //-------------------------------------------------------------
 void mem_free(void* zone) {
+    rb_t* rb = (rb_t*) (zone - sizeof(rb_t));
+    void* memory = get_memory_adr();
+    size_t free_size = rb->size;
 
+    fb_t* next_rb = rb->previous_fb->next;
+    fb_t* new_fb = (fb_t *) rb;
+
+    new_fb->size = free_size;
+    new_fb->next = next_rb;
+
+
+
+    if (rb->previous_fb){
+        right_fusion(new_fb, rb);
+        left_fusion(new_fb);
+        return;
+    }
+
+    memory_head_t* mem_h = (memory_head_t*)memory ;
+
+    new_fb->next = mem_h->first_block->next ;
+    if (new_fb->next){
+
+        new_fb->next->previous = new_fb ;
+        right_fusion(new_fb, rb);
+    }
+
+    new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
+
+    mem_h->first_block = new_fb;
 }
 
 //-------------------------------------------------------------
