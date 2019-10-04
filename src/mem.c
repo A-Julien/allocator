@@ -95,6 +95,9 @@ struct fb* mem_first_fit(fb_t* head, size_t size) {
         if(p->size < size) p = p->next;
         return p;
     }
+
+    if (head->size >= size) return head;
+
     return NULL;
 }
 //-------------------------------------------------------------
