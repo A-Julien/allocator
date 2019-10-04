@@ -51,8 +51,8 @@ void* mem_alloc(size_t size) {
         return fb_found + sizeof(rb_t);
     }
 
-    fb_previous->next = fb_next;
-    fb_next->previous = fb_previous;
+    if (fb_previous) fb_previous->next = fb_next;
+    if (fb_next) fb_next->previous = fb_previous;
 
     rb_t* new_rb = (rb_t *)fb_found;
     new_rb->size = size;
