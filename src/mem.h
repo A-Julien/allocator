@@ -15,8 +15,8 @@ bool adjoining_block_rb(rb_t * , rb_t*);
 bool adjoining_block_fb(fb_t * ,fb_t * );
 void maj_rb(fb_t * , rb_t* );
 
-void right_fusion(fb_t* , rb_t* );
-void left_fusion(fb_t* );
+void right_fusion(fb_t*);
+void left_fusion(fb_t*);
 
 
 /* Itérateur sur le contenu de l'allocateur */

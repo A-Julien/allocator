@@ -56,6 +56,7 @@ int main(int argc, char** argv)
     int taille, i;
     void* allocations[MAX_ALLOCATIONS];
     int nb_alloc=0;
+    //unsigned char c;
     
     aide();
     mem_init();
@@ -98,6 +99,7 @@ int main(int argc, char** argv)
                 printf("[ ");
                 adresse = get_memory_adr();
                 for (i=0; i<get_memory_size(); i++)
+                    //c = adresse[i];
                     printf("%d ", adresse[i]);
                 printf("]\n");
                 break;

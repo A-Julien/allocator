@@ -35,15 +35,17 @@ void* mem_alloc(size_t size) {
 
     if (!mem_h->first_block) return NULL;
 
-    fb_t* fb_found = mem_h->strategy(mem_h->first_block, ((size + sizeof(fb_t)) - sizeof(rb_t)));
+    fb_t* fb_found = mem_h->strategy(mem_h->first_block, ((size + sizeof(fb_t) ) - sizeof(rb_t)));
     if(!fb_found) return NULL;
 
     fb_t* fb_previous = fb_found->previous;
     fb_t* fb_next = fb_found->next;
 
-    if ((sizeof(rb_t) + size) < fb_found->size ){
-        fb_t* new_fb = fb_found + (sizeof(rb_t) + size);
-        new_fb->size = fb_found->size - size ;
+    if (fb_found->size - sizeof(rb_t) - (size + 1) > 0){
+
+        fb_t* new_fb = (void *)fb_found + (size + sizeof(rb_t));
+
+        new_fb->size = (fb_found->size  - sizeof(rb_t)) - size;
 
         new_fb->previous = fb_previous;
         new_fb->next = fb_next;
@@ -54,9 +56,9 @@ void* mem_alloc(size_t size) {
         new_rb->size = size;
         new_rb->previous_fb = fb_previous;
 
-        if (!fb_previous) mem_h->first_block = new_fb;//maj header
+        if (!fb_previous) mem_h->first_block = new_fb; //maj header
 
-        return fb_found + sizeof(rb_t);
+        return ((void *)fb_found) + sizeof(rb_t);
     }
 
     if (fb_previous) fb_previous->next = fb_next;
@@ -68,8 +70,7 @@ void* mem_alloc(size_t size) {
 
     new_rb->previous_fb = fb_previous;
 
-
-    return fb_found + sizeof(rb_t);;
+    return ((void *) fb_found) + sizeof(rb_t);
 }
 
 bool adjoining_block_fb(fb_t * block_1, fb_t * block_2){
@@ -90,24 +91,20 @@ void maj_rb(fb_t * fb, rb_t* rb){
     }
 }
 //FUSIOOOOONNNNNNNNN (DBZ)
-void right_fusion(fb_t* fb, rb_t* rb){
-    if (rb->previous_fb->next && adjoining_block_fb(fb, fb->next)){
-        fb->next = fb->next->next;
-        fb->previous->next = fb;
+void right_fusion(fb_t* fb){
+    size_t old_size = fb->next->size;
+    fb->next = fb->next->next;
+    if(fb->next->previous)fb->previous->next = fb;
 
-        fb->size = sizeof(fb_t)*2 + fb->next->size;
-    } else {
-        maj_rb(fb, rb);
-    }
+    fb->size += sizeof(fb_t) + old_size;
 }
+
 //FUSIOOOOONNNNNNNNN (DBZ)
 void left_fusion(fb_t* fb){
-    if (adjoining_block_fb(fb->previous, fb)){
-        fb->previous->next = fb->next;
-        fb->next->previous = fb->previous;
+    fb->previous->next = fb->next;
+    if(fb->next)fb->next->previous = fb->previous;
 
-        fb->previous->size += sizeof(fb_t) +  fb->size;
-    }
+    fb->previous->size += sizeof(fb_t) +  fb->size;
 }
 
 //TODO : segfault test_fusion fusion arriere
@@ -115,36 +112,66 @@ void left_fusion(fb_t* fb){
 // mem_free
 //-------------------------------------------------------------
 void mem_free(void* zone) {
-    rb_t* rb = (rb_t*) (zone - sizeof(rb_t));
+    rb_t* rb = zone - sizeof(rb_t);
     void* memory = get_memory_adr();
-    size_t free_size = rb->size;
-    fb_t* next_fb = NULL;
-    if(rb->previous_fb && rb->previous_fb->next) next_fb = rb->previous_fb->next;
+
+    size_t free_size = (rb->size + sizeof(rb_t)) - sizeof(fb_t);
+    fb_t* rb_previous = rb->previous_fb;
+
     fb_t* new_fb = (fb_t *) rb;
-
     new_fb->size = free_size;
-    new_fb->next = next_fb;
+    new_fb->next = NULL;
+    new_fb->previous = rb_previous;
+    //if(rb->previous_fb && rb->previous_fb->next) next_fb = rb->previous_fb->next;
+
+    if(new_fb->previous){
+        if (new_fb->previous->next && adjoining_block_fb(new_fb, new_fb->previous->next)){
+            right_fusion(new_fb);
+            maj_rb();
+        }else{
+            maj_rb();
+            maj_fb();
+        }
+
+
+        if (adjoining_block_fb(new_fb->previous,new_fb)){
+            left_fusion(new_fb);
+        }else{
+            maj_rb();
+            maj_fb();
+        }
+    }else{
+
+    }
 
 
 
-    if (rb->previous_fb){
+    /*if (rb->previous_fb){
         right_fusion(new_fb, rb);
         left_fusion(new_fb);
         return;
-    }
+    }*/
 
     memory_head_t* mem_h = (memory_head_t*)memory ;
 
     if (mem_h->first_block) new_fb->next = mem_h->first_block->next ;
-    if (new_fb->next){
+    mem_h->first_block = new_fb;
 
+    if (new_fb->next){
         new_fb->next->previous = new_fb ;
-        right_fusion(new_fb, rb);
+
+
+        if(adjoining_block_fb(new_fb, new_fb->next)) {
+            right_fusion(new_fb);
+            maj_rb();
+        } else{
+            new_fb->next->previous = new_fb;
+            maj_rb();
+        }
     }
 
     new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
 
-    mem_h->first_block = new_fb;
 }
 
 //-------------------------------------------------------------
