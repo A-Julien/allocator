@@ -7,18 +7,18 @@ typedef struct fb* (mem_fit_function_t)(struct fb *, size_t);
 
 struct fb {
 	size_t size ;
-	struct fb *next ;
-    struct fb *previous ;
+	struct fb *next;
+    struct fb *previous;
 } typedef fb_t ;
 
 struct rb {
     size_t size ;
-    fb_t *previous_fb ;
+    fb_t *previous_fb;
 } typedef rb_t ;
 
 struct memory_head {
 	mem_fit_function_t *strategy ;
-	fb_t first_block ;
+	fb_t* first_block ;
 }typedef memory_head_t ;
 
 /* -----------------------------------------------*/

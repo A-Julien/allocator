@@ -14,13 +14,15 @@ void mem_init() {
     //déclaration & initialisation de l'entête de notre mémoire
     memory_head_t* mem_h = (memory_head_t*)memory ;
     mem_h->strategy = mem_first_fit;
-    mem_h->first_block.size = get_memory_size() - sizeof(memory_head_t);
-    mem_h->first_block.next = NULL;
-    mem_h->first_block.previous = NULL ;
+    mem_h->first_block = memory + sizeof(memory_head_t);
+
+    fb_t* first_fb_t = mem_h->first_block;
+    first_fb_t->size = get_memory_size() - sizeof(memory_head_t);
+    first_fb_t->next = NULL;
+    first_fb_t->previous = NULL ;
 
 }
 
-//TODO maj fb
 //-------------------------------------------------------------
 // mem_alloc
 //-------------------------------------------------------------
@@ -28,7 +30,7 @@ void* mem_alloc(size_t size) {
     void* memory = get_memory_adr();
     memory_head_t* mem_h = (memory_head_t*)memory ;
 
-    fb_t* fb_found = mem_h->strategy(&mem_h->first_block, ((size + sizeof(fb_t)) - sizeof(rb_t)));
+    fb_t* fb_found = mem_h->strategy(mem_h->first_block, ((size + sizeof(fb_t)) - sizeof(rb_t)));
     if(!fb_found) return NULL;
 
 
@@ -41,8 +43,8 @@ void* mem_alloc(size_t size) {
 
         new_fb->previous = fb_previous;
         new_fb->next = fb_next;
-        fb_previous->next = new_fb;
-        fb_next->previous = new_fb;
+        if (fb_previous)fb_previous->next = new_fb;
+        if (fb_next)fb_next->previous = new_fb;
 
         rb_t* new_rb = (rb_t *)fb_found;
         new_rb->size = size;
@@ -66,7 +68,7 @@ void* mem_alloc(size_t size) {
 // mem_free
 //-------------------------------------------------------------
 void mem_free(void* zone) {
-   /* A COMPLETER */ 
+
 }
 
 //-------------------------------------------------------------
