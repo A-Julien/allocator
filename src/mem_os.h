@@ -8,6 +8,7 @@ typedef struct fb* (mem_fit_function_t)(struct fb *, size_t);
 struct fb {
 	size_t size ;
 	struct fb *next ;
+    struct fb *previous ;
 } typedef fb_t ;
 
 struct rb {

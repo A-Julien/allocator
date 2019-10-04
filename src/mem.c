@@ -16,6 +16,7 @@ void mem_init() {
     mem_h->strategy = mem_first_fit;
     mem_h->first_block.size = get_memory_size() - sizeof(memory_head_t);
     mem_h->first_block.next = NULL;
+    mem_h->first_block.previous = NULL ;
 
 }
 
@@ -30,7 +31,35 @@ void* mem_alloc(size_t size) {
     fb_t* fb_found = mem_h->strategy(&mem_h->first_block, ((size + sizeof(fb_t)) - sizeof(rb_t)));
     if(!fb_found) return NULL;
 
-    return fb_found + sizeof(fb_t);
+
+    fb_t* fb_previous = fb_found->previous;
+    fb_t* fb_next = fb_found->next;
+
+    if ((sizeof(rb_t) + size) < fb_found->size ){
+        fb_t* new_fb = fb_found + (sizeof(rb_t) + size);
+        new_fb->size = fb_found->size - size ;
+
+        new_fb->previous = fb_previous;
+        new_fb->next = fb_next;
+        fb_previous->next = new_fb;
+        fb_next->previous = new_fb;
+
+        rb_t* new_rb = (rb_t *)fb_found;
+        new_rb->size = size;
+        new_rb->previous_fb = fb_previous;
+
+        return fb_found + sizeof(rb_t);
+    }
+
+    fb_previous->next = fb_next;
+    fb_next->previous = fb_previous;
+
+    rb_t* new_rb = (rb_t *)fb_found;
+    new_rb->size = size;
+
+    new_rb->previous_fb = fb_previous;
+
+    return fb_found + sizeof(rb_t);;
 }
 
 //-------------------------------------------------------------
