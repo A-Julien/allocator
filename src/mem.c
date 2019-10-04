@@ -118,12 +118,12 @@ void mem_free(void* zone) {
     rb_t* rb = (rb_t*) (zone - sizeof(rb_t));
     void* memory = get_memory_adr();
     size_t free_size = rb->size;
-
-    fb_t* next_rb = rb->previous_fb->next;
+    fb_t* next_fb = NULL;
+    if(!rb->previous_fb->next) next_fb = rb->previous_fb->next;
     fb_t* new_fb = (fb_t *) rb;
 
     new_fb->size = free_size;
-    new_fb->next = next_rb;
+    new_fb->next = next_fb;
 
 
 
