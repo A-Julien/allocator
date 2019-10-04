@@ -10,6 +10,11 @@ struct fb {
 	struct fb *next ;
 } typedef fb_t ;
 
+struct rb {
+    size_t size ;
+    fb_t *previous_fb ;
+} typedef rb_t ;
+
 struct memory_head {
 	mem_fit_function_t *strategy ;
 	fb_t first_block ;
