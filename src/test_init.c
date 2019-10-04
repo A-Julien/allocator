@@ -9,9 +9,11 @@
 static void *alloc_max(size_t estimate) {
 	void *result;
 	static size_t last = 0;
-
-	while ((result = mem_alloc(estimate)) == NULL) {
+	result = mem_alloc(estimate);
+	while (result == NULL) {
 		estimate--;
+		result = mem_alloc(estimate);
+
 	}
 	debug("Alloced %zu bytes at %p\n", estimate, result);
 	if (last) {

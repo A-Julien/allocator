@@ -110,7 +110,7 @@ void left_fusion(fb_t* fb){
     }
 }
 
-
+//TODO : segfault test_fusion fusion arriere
 //-------------------------------------------------------------
 // mem_free
 //-------------------------------------------------------------
@@ -119,7 +119,7 @@ void mem_free(void* zone) {
     void* memory = get_memory_adr();
     size_t free_size = rb->size;
     fb_t* next_fb = NULL;
-    if(!rb->previous_fb->next) next_fb = rb->previous_fb->next;
+    if(rb->previous_fb && rb->previous_fb->next) next_fb = rb->previous_fb->next;
     fb_t* new_fb = (fb_t *) rb;
 
     new_fb->size = free_size;
@@ -135,7 +135,7 @@ void mem_free(void* zone) {
 
     memory_head_t* mem_h = (memory_head_t*)memory ;
 
-    new_fb->next = mem_h->first_block->next ;
+    if (mem_h->first_block) new_fb->next = mem_h->first_block->next ;
     if (new_fb->next){
 
         new_fb->next->previous = new_fb ;
