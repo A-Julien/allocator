@@ -16,6 +16,7 @@ void mem_init() {
     mem_h->strategy = mem_first_fit;
     mem_h->first_block = memory + sizeof(memory_head_t);
 
+    //init first fb_t
     fb_t* first_fb_t = mem_h->first_block;
     first_fb_t->size = get_memory_size() - sizeof(memory_head_t);
     first_fb_t->next = NULL;
@@ -50,16 +51,20 @@ void* mem_alloc(size_t size) {
         new_rb->size = size;
         new_rb->previous_fb = fb_previous;
 
+        if (!fb_previous) mem_h->first_block = new_fb;//maj header
+
         return fb_found + sizeof(rb_t);
     }
 
     if (fb_previous) fb_previous->next = fb_next;
     if (fb_next) fb_next->previous = fb_previous;
+    if (!fb_previous) mem_h->first_block = NULL; //maj header
 
     rb_t* new_rb = (rb_t *)fb_found;
     new_rb->size = size;
 
     new_rb->previous_fb = fb_previous;
+
 
     return fb_found + sizeof(rb_t);;
 }
@@ -103,7 +108,7 @@ struct fb* mem_first_fit(fb_t* head, size_t size) {
     return NULL;
 }
 //-------------------------------------------------------------
-struct fb* mem_best_fit(struct fb* head, size_t size) {
+struct fb* mem_best_fit(fb_t* head, size_t size) {
     fb_t *p = head;
     fb_t *best_fit = head;
     while(p->next != NULL){
@@ -115,7 +120,7 @@ struct fb* mem_best_fit(struct fb* head, size_t size) {
 
 }
 //-------------------------------------------------------------
-struct fb* mem_worst_fit(struct fb* head, size_t size) {
+struct fb* mem_worst_fit(fb_t* head, size_t size) {
     fb_t *p = head;
     fb_t *worst_fit = head;
     while(p->next != NULL){
