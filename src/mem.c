@@ -89,8 +89,10 @@ bool adjoining_block_rb(rb_t * block_1, rb_t * block_2){
 void right_fusion(fb_t* fb){
     size_t old_size = fb->next->size;
     fb->next = fb->next->next;
-    if(fb->next && fb->next->previous)fb->previous->next = fb;
-
+    if(fb->next && fb->next->previous){
+        fb->previous->next = fb;
+        fb->next->previous = fb;
+    }
     fb->size += sizeof(fb_t) + old_size;
 }
 
@@ -104,10 +106,11 @@ void left_fusion(fb_t* fb){
 
 void update_rb(fb_t* fb){
     if(fb->next){ // rb between fb and fb->next
-        rb_t *rb_curent = (void *)fb + fb->size;
-        while ((void *)fb->next != (void *)rb_curent ){
+        rb_t* rb_curent = (void *)fb + (fb->size + sizeof(fb_t));
+
+        while ((void *)fb->next >= (void *)rb_curent ){
             rb_curent->previous_fb = fb;
-            rb_curent = (void *)rb_curent + rb_curent->size;
+            rb_curent = (void *)rb_curent + rb_curent->size + sizeof(rb_t);
         }
         return;
     }
@@ -115,10 +118,9 @@ void update_rb(fb_t* fb){
     void* end_of_memory = get_memory_adr() + get_memory_size();
 
     if( ((void *)(fb + fb->size + sizeof(fb_t))) != end_of_memory){ //not end of memory
-        //rb_t* rb_curent = (void *)fb + fb->size + sizeof(fb_t);
         rb_t* rb_curent = (void *)fb + (fb->size + sizeof(fb_t));
 
-        while ((void *)rb_curent != end_of_memory ){
+        while ((void *)rb_curent <= end_of_memory ){
             rb_curent->previous_fb = fb;
             rb_curent = (void *)rb_curent + rb_curent->size + sizeof(rb_t);
         }
@@ -127,14 +129,14 @@ void update_rb(fb_t* fb){
 }
 
 void update_fb_next(fb_t *fb){
-    if (fb->previous->next){
+    if (fb->previous && fb->previous->next){
         fb->previous->next->previous = fb;
         fb->next = fb->previous->next;
     }
 }
 
 void update_fb_previous(fb_t *fb){
-    if(fb->previous->next) fb->previous->next = fb;
+    if(fb->previous && fb->previous->next) fb->previous->next = fb;
 }
 
 
@@ -145,13 +147,20 @@ void mem_free(void* zone) {
     rb_t* rb = (rb_t *)(zone - sizeof(rb_t));
     void* memory = get_memory_adr();
 
-    size_t free_size = (rb->size + sizeof(rb_t)) - sizeof(fb_t);
+    rb_t* rb2;
+    rb2 = (void *)rb + rb->size + sizeof(rb_t);
+
+    size_t free_size = rb->size + sizeof(rb_t);
     fb_t* rb_previous = rb->previous_fb;
 
     fb_t* new_fb = (fb_t *) rb;
-    new_fb->size = free_size;
+    new_fb->size = free_size - sizeof(fb_t);
     new_fb->next = NULL;
     new_fb->previous = rb_previous;
+
+    fb_t* tes;
+    tes = (void *)new_fb + new_fb->size;
+    tes += sizeof(fb_t);
 
     if(new_fb->previous) {
         if (new_fb->previous->next && is_adjoining_block_fb(new_fb, new_fb->previous->next)) {
@@ -168,11 +177,11 @@ void mem_free(void* zone) {
         }
         update_rb(new_fb);
 
-        new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
+        //new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
         return;
     }
 
-    memory_head_t* mem_h = (memory_head_t*)memory ;
+    memory_head_t* mem_h = (memory_head_t*)memory;
     if (mem_h->first_block) {
         new_fb->next = mem_h->first_block ;
 
@@ -185,7 +194,7 @@ void mem_free(void* zone) {
     }
     mem_h->first_block = new_fb;
 
-    new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
+    //new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
 }
 
 //-------------------------------------------------------------
