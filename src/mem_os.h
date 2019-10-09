@@ -1,3 +1,10 @@
+/**
+ * \file mem_os.h
+ * \brief define structure and fit function
+ * \author A-J, H-F
+ * \version 0.1
+ *
+ */
 #if !defined(mem_os_h)
 #define mem_os_h
 

@@ -1,4 +1,3 @@
-
 #include "mem.h"
 #include "mem_os.h"
 #include "common.h"
@@ -9,6 +8,11 @@
 //-------------------------------------------------------------
 // mem_init
 //-------------------------------------------------------------
+
+
+/**
+ * init memory
+ */
 void mem_init() {
 
     void* memory = get_memory_adr();
@@ -124,36 +128,22 @@ void mem_free(void* zone) {
     new_fb->previous = rb_previous;
     //if(rb->previous_fb && rb->previous_fb->next) next_fb = rb->previous_fb->next;
 
-    if(new_fb->previous){
-        if (new_fb->previous->next && adjoining_block_fb(new_fb, new_fb->previous->next)){
+    if(new_fb->previous) {
+        if (new_fb->previous->next && adjoining_block_fb(new_fb, new_fb->previous->next)) {
             right_fusion(new_fb);
             maj_rb();
-        }else{
+        } else {
             maj_rb();
             maj_fb();
         }
-
-
-        if (adjoining_block_fb(new_fb->previous,new_fb)){
+        if (adjoining_block_fb(new_fb->previous, new_fb)) {
             left_fusion(new_fb);
-        }else{
+        } else {
             maj_rb();
             maj_fb();
         }
-    }else{
-
     }
-
-
-
-    /*if (rb->previous_fb){
-        right_fusion(new_fb, rb);
-        left_fusion(new_fb);
-        return;
-    }*/
-
     memory_head_t* mem_h = (memory_head_t*)memory ;
-
     if (mem_h->first_block) new_fb->next = mem_h->first_block->next ;
     mem_h->first_block = new_fb;
 
@@ -179,7 +169,7 @@ void mem_free(void* zone) {
 // mem_show
 //-------------------------------------------------------------
 void mem_show(void (*print)(void *, size_t, int free)) {
-   /* A COMPLETER */ 
+
 }
 
 //-------------------------------------------------------------

@@ -7,6 +7,7 @@
 /* -----------------------------------------------*/
 /* Interface utilisateur de votre allocateur      */
 /* -----------------------------------------------*/
+
 void mem_init(void);
 void* mem_alloc(size_t);
 void mem_free(void*);
