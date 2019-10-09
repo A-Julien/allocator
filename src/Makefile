@@ -6,7 +6,7 @@ CC=gcc
 # on Debian/Ubuntu)
 HOST32= -m32
 
-CFLAGS= $(HOST32) -Wall -Werror -std=c99 -g3 -DMEMORY_SIZE=128
+CFLAGS= $(HOST32) -Wall -Werror -std=c99 -g3 -DMEMORY_SIZE=128000
 CFLAGS+= -DDEBUG
 LDFLAGS= $(HOST32)
 INCLUDE=.

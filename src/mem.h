@@ -13,8 +13,11 @@ void* mem_alloc(size_t);
 void mem_free(void*);
 size_t mem_get_size(void *);
 bool adjoining_block_rb(rb_t * , rb_t*);
-bool adjoining_block_fb(fb_t * ,fb_t * );
-void maj_rb(fb_t * , rb_t* );
+bool is_adjoining_block_fb(fb_t *, fb_t *);
+void update_rb(fb_t *);
+void update_fb_next(fb_t *);
+void update_fb_previous(fb_t *);
+
 
 void right_fusion(fb_t*);
 void left_fusion(fb_t*);
