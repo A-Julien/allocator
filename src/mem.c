@@ -143,7 +143,6 @@ void update_fb(fb_t *fb){
 
 }
 
-
 //-------------------------------------------------------------
 // mem_free
 //-------------------------------------------------------------
@@ -212,7 +211,34 @@ void mem_free(void* zone) {
 // mem_show
 //-------------------------------------------------------------
 void mem_show(void (*print)(void *, size_t, int free)) {
+    void * memory = get_memory_adr();
+    memory_head_t* mem_h = (memory_head_t*)memory ;
 
+    fb_t* fb = mem_h->first_block;
+    rb_t * rb = NULL;
+
+    if(fb){
+        if(fb == (void*)mem_h + sizeof(memory_head_t)) {
+            if(fb->size + sizeof(fb_t) + sizeof(memory_head_t) < get_memory_size())
+                rb = (void *)fb + fb->size + sizeof(fb_t);
+        } else rb = (void*)mem_h + sizeof(memory_head_t);
+    } else rb = (void*)mem_h + sizeof(memory_head_t);
+
+    while (fb != NULL) {
+        print(fb, fb->size, 1);
+        fb = fb->next;
+    }
+
+    if (rb != NULL){
+        while ((void *) rb < get_memory_adr() + get_memory_size()) {
+            if(rb->previous_fb && is_adjoining_block_fb((fb_t *)rb, rb->previous_fb->next)){
+                rb = (void*)rb + rb->size + sizeof(rb_t) + rb->previous_fb->next->size + sizeof(fb_t);
+            }
+            print(rb, rb->size, 0);
+            rb = (void*)rb + rb->size + sizeof(rb_t);
+        }
+        return;
+    }
 }
 
 //-------------------------------------------------------------
