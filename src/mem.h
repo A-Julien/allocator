@@ -14,13 +14,12 @@ void mem_free(void*);
 size_t mem_get_size(void *);
 bool adjoining_block_rb(rb_t * , rb_t*);
 bool is_adjoining_block_fb(fb_t *, fb_t *);
-void update_rb(fb_t *);
-void update_fb_next(fb_t *);
-void update_fb_previous(fb_t *);
+void update_rb(fb_t *, bool);
+void update_fb(fb_t *);
 
 
 void right_fusion(fb_t*);
-void left_fusion(fb_t*);
+fb_t* left_fusion(fb_t*);
 
 
 /* Itérateur sur le contenu de l'allocateur */

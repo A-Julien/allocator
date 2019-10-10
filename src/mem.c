@@ -44,6 +44,10 @@ void* mem_alloc(size_t size) {
 
     fb_t* fb_previous = fb_found->previous;
     fb_t* fb_next = fb_found->next;
+    size_t size_fb_found = fb_found->size;
+
+    update_rb(fb_found, fb_found->previous ? false:true); //undebegable line
+
 
     if (fb_found->size > size + sizeof(fb_t) + sizeof(void*)){
 
@@ -53,11 +57,15 @@ void* mem_alloc(size_t size) {
 
         new_fb->previous = fb_previous;
         new_fb->next = fb_next;
+
+        update_fb(new_fb);
+        update_rb(new_fb, false);
+
         if (fb_previous)fb_previous->next = new_fb;
         if (fb_next)fb_next->previous = new_fb;
 
         rb_t* new_rb = (rb_t *)fb_found;
-        new_rb->size = size;
+        new_rb->size =  size_fb_found - (new_fb->size + sizeof(rb_t));
         new_rb->previous_fb = fb_previous;
 
         if (!fb_previous) mem_h->first_block = new_fb; //maj header
@@ -70,8 +78,8 @@ void* mem_alloc(size_t size) {
     if (!fb_previous && !fb_next) mem_h->first_block = NULL; //maj header
 
     rb_t* new_rb = (rb_t *)fb_found;
-    new_rb->size = size;
 
+    new_rb->size = (fb_found->size + sizeof(fb_t)) - sizeof(rb_t);
     new_rb->previous_fb = fb_previous;
 
     return ((void *) fb_found) + sizeof(rb_t);
@@ -87,28 +95,26 @@ bool adjoining_block_rb(rb_t * block_1, rb_t * block_2){
 
 //FUSIOOOOONNNNNNNNN (DBZ)
 void right_fusion(fb_t* fb){
-    size_t old_size = fb->next->size;
-    fb->next = fb->next->next;
-    if(fb->next && fb->next->previous){
-        fb->previous->next = fb;
-        fb->next->previous = fb;
-    }
+    size_t old_size = fb->next ? fb->next->size:fb->previous->next->size;
+
+    fb->next = fb->next ? fb->next->next:fb->previous->next->next;
+    if(fb->next) fb->next->previous = fb;
+    if(fb->previous) fb->previous->next = fb;
     fb->size += sizeof(fb_t) + old_size;
 }
 
 //FUSIOOOOONNNNNNNNN (DBZ)
-void left_fusion(fb_t* fb){
+fb_t* left_fusion(fb_t* fb){
+    fb->previous->size += fb->size + sizeof(fb_t);
     fb->previous->next = fb->next;
-    if(fb->next)fb->next->previous = fb->previous;
-
-    fb->previous->size += sizeof(fb_t) +  fb->size;
+    return fb->previous;
 }
 
-void update_rb(fb_t* fb){
+void update_rb(fb_t* fb, bool set_to_null){
     if(fb->next){ // rb between fb and fb->next
         rb_t* rb_curent = (void *)fb + (fb->size + sizeof(fb_t));
 
-        while ((void *)fb->next >= (void *)rb_curent ){
+        while ((void *)fb->next > (void *)rb_curent ){
             rb_curent->previous_fb = fb;
             rb_curent = (void *)rb_curent + rb_curent->size + sizeof(rb_t);
         }
@@ -117,26 +123,24 @@ void update_rb(fb_t* fb){
 
     void* end_of_memory = get_memory_adr() + get_memory_size();
 
-    if( ((void *)(fb + fb->size + sizeof(fb_t))) != end_of_memory){ //not end of memory
+    if( (((void *)fb + fb->size + sizeof(fb_t))) < end_of_memory){ //not end of memory
+
         rb_t* rb_curent = (void *)fb + (fb->size + sizeof(fb_t));
 
         while ((void *)rb_curent <= end_of_memory ){
-            rb_curent->previous_fb = fb;
+            if(!set_to_null)rb_curent->previous_fb = fb; // 2 tests plutot qu'un acces mem en plus
+            if(set_to_null)rb_curent->previous_fb = NULL;
             rb_curent = (void *)rb_curent + rb_curent->size + sizeof(rb_t);
         }
         return;
     }
 }
 
-void update_fb_next(fb_t *fb){
-    if (fb->previous && fb->previous->next){
-        fb->previous->next->previous = fb;
-        fb->next = fb->previous->next;
-    }
-}
+void update_fb(fb_t *fb){
+    if(fb->next) fb->next->previous = fb;
+    if(fb->previous) fb->previous->next = fb;
+    if(fb->previous && fb->previous->next && fb->previous->next != fb)fb->next = fb->previous->next;
 
-void update_fb_previous(fb_t *fb){
-    if(fb->previous && fb->previous->next) fb->previous->next = fb;
 }
 
 
@@ -147,37 +151,44 @@ void mem_free(void* zone) {
     rb_t* rb = (rb_t *)(zone - sizeof(rb_t));
     void* memory = get_memory_adr();
 
-    rb_t* rb2;
-    rb2 = (void *)rb + rb->size + sizeof(rb_t);
-
     size_t free_size = rb->size + sizeof(rb_t);
-    fb_t* rb_previous = rb->previous_fb;
+    fb_t* fb_previous = rb->previous_fb;
+
+    if (free_size < sizeof(fb_t)){
+        if(fb_previous){
+            if(is_adjoining_block_fb(fb_previous, (fb_t*)rb)) {
+                fb_previous->size += free_size;
+                return;
+            }
+            rb_t* rb_curent = (void *)fb_previous + (fb_previous->size + sizeof(fb_t));
+
+            while ((void *)rb_curent + (rb_curent->size + sizeof(rb_t)) != (void*)rb){
+                rb_curent = (void *)rb_curent + rb_curent->size + sizeof(rb_t);
+            }
+            rb_curent->size += free_size;
+        }
+        return; //perte de mémoire si size du bloc alloué accollé au mem_h < sizeof(fb_t)
+    }
 
     fb_t* new_fb = (fb_t *) rb;
     new_fb->size = free_size - sizeof(fb_t);
     new_fb->next = NULL;
-    new_fb->previous = rb_previous;
-
-    fb_t* tes;
-    tes = (void *)new_fb + new_fb->size;
-    tes += sizeof(fb_t);
+    new_fb->previous = fb_previous;
 
     if(new_fb->previous) {
         if (new_fb->previous->next && is_adjoining_block_fb(new_fb, new_fb->previous->next)) {
             right_fusion(new_fb);
-        } else {
-            update_fb_next(new_fb);
         }
-        update_rb(new_fb);
+        update_fb(new_fb);
+        update_rb(new_fb, false);
 
         if (is_adjoining_block_fb(new_fb->previous, new_fb)) {
-            left_fusion(new_fb);
-        } else {
-            update_fb_previous(new_fb);
+            new_fb = left_fusion(new_fb);
         }
-        update_rb(new_fb);
 
-        //new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
+        update_fb(new_fb);
+        update_rb(new_fb, false);
+
         return;
     }
 
@@ -187,14 +198,13 @@ void mem_free(void* zone) {
 
         if(is_adjoining_block_fb(new_fb, new_fb->next)) {
             right_fusion(new_fb);
-        } else{
-            update_fb_next(new_fb);
         }
-        update_rb(new_fb);
-    }
-    mem_h->first_block = new_fb;
 
-    //new_fb->size = (free_size + sizeof(rb_t)) - sizeof(fb_t) ;
+        update_fb(new_fb);
+        update_rb(new_fb, false);
+    }
+    update_rb(new_fb, false);
+    mem_h->first_block = new_fb;
 }
 
 //-------------------------------------------------------------
